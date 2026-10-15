@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import JWT_SECRET from '../config';
 import { getUserByEmail, createUser, setPasswordResetToken, updatePassword } from '../models/user';
 import { hashPassword, comparePassword } from '../utils/auth';
 
@@ -21,15 +22,13 @@ router.post('/register', async (req, res) => {
   }
   const hashed = await hashPassword(password);
   const user = await createUser(name, normalizedEmail, hashed, 'citizen', block_division);
-  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
   res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, block_division: user.block_division } });
 });
 
 router.post('/login', async (req, res) => {
   const { email, password, portal } = req.body;
-  if (!portal || (portal !== 'citizen' && portal !== 'official')) {
-    return res.status(400).json({ error: 'Invalid portal' });
-  }
+
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
@@ -45,15 +44,9 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  // Portal Check
-  if (portal === 'citizen' && user.role !== 'citizen') {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-  if (portal === 'official' && user.role !== 'admin') {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
 
-  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
   res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, block_division: user.block_division } });
 });
 

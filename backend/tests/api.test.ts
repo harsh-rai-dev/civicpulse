@@ -1,6 +1,7 @@
 import request from 'supertest';
 import app from '../src/app';
 const { Storage } = require('../src/storage');
+import JWT_SECRET from '../src/config';
 const jwt = require('jsonwebtoken');
 
 // Mock global fetch for EmailJS REST API calls
@@ -52,7 +53,7 @@ describe('CivicPulse API flow', () => {
 
   test('admin login (hardcoded)', async () => {
     const admin = await Storage.addUser({ name: 'Admin', email: adminEmail, passwordHash: 'hash', role: 'admin' });
-    adminToken = jwt.sign({ id: admin.id, role: admin.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+    adminToken = jwt.sign({ id: admin.id, role: admin.role }, JWT_SECRET, { expiresIn: '1d' });
   });
 
   test('create complaint', async () => {
