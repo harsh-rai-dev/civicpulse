@@ -1,6 +1,13 @@
 import { Storage } from '../storage';
 import { Complaint } from '../../../shared/types';
 import { calculatePriority, getPriorityLevel } from '../services/priority';
+export function computeDisplayPriority(voteCount: number, baseLevel: string): string {
+  if (baseLevel === 'Critical') return 'Critical';
+  if (voteCount >= 5) return 'High';
+  if (voteCount >= 3) return 'Medium';
+  return 'Low';
+}
+
 
 export async function createComplaint(data: {
   user_id: string;

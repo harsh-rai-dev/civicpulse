@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { AuthRequest, authenticate } from '../middleware/auth';
-import { listComplaints } from '../models/complaint';
+import { listComplaints, computeDisplayPriority } from '../models/complaint';
 import { getVoteCount } from '../models/vote';
 
 const router = Router();
@@ -23,10 +23,11 @@ router.get('/complaints', async (req: AuthRequest, res) => {
   if (req.user!.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
   const filters = req.query as any;
   const complaints = await listComplaints(filters);
-  const enriched = await Promise.all(complaints.map(async c => ({
-    ...c,
-    voteCount: await getVoteCount(c.id),
-  })));
+  const enriched = await Promise.all(complaints.map(async c => {
+    const vc = await getVoteCount(c.id);
+    const newPriority = computeDisplayPriority(vc, c.priority_level);
+    return { ...c, voteCount: vc, priority_level: newPriority };
+  }));
   
   // Municipal Corporation Queue Rule:
   // 1. Emergency complaints always come first

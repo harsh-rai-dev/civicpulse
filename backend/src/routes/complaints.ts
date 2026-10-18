@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { AuthRequest, authenticate } from '../middleware/auth';
-import { createComplaint, getComplaintById, listComplaints, updateComplaintStatus, deleteComplaint } from '../models/complaint';
+import { createComplaint, getComplaintById, listComplaints, updateComplaintStatus, deleteComplaint, computeDisplayPriority } from '../models/complaint';
 import { addVote, getVoteCount, hasUserVoted } from '../models/vote';
 import { Storage } from '../storage';
 
@@ -10,7 +10,7 @@ router.use(authenticate);
 
 router.post('/', async (req: AuthRequest, res) => {
   console.log('POST /api/complaints - Incoming request body:', req.body);
-  const { zone, block_division, landmark, category, description, image_path, is_emergency } = req.body;
+  const { zone, block_division, landmark, category, description, image_path, is_emergency, priority } = req.body;
   if (!zone || !landmark || !category || !description) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -31,11 +31,11 @@ router.get('/', async (req: AuthRequest, res) => {
   const filters = req.query as any;
   const complaints = await listComplaints(filters);
   const userId = req.user?.id;
-  const enriched = await Promise.all(complaints.map(async c => ({
-    ...c,
-    voteCount: await getVoteCount(c.id),
-    hasVoted: userId ? await hasUserVoted(userId, c.id) : false,
-  })));
+    const enriched = await Promise.all(complaints.map(async c => {
+    const vc = await getVoteCount(c.id);
+    const newPriority = computeDisplayPriority(vc, c.priority_level);
+    return { ...c, voteCount: vc, hasVoted: userId ? await hasUserVoted(userId, c.id) : false, priority_level: newPriority };
+  }));
   res.json(enriched);
 });
 
@@ -44,7 +44,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
   if (!complaint) return res.status(404).json({ error: 'Complaint not found' });
   const voteCount = await getVoteCount(complaint.id);
   const hasVoted = req.user?.id ? await hasUserVoted(req.user.id, complaint.id) : false;
-  res.json({ ...complaint, voteCount, hasVoted });
+  res.json({ ...complaint, voteCount, hasVoted, priority_level: computeDisplayPriority(voteCount, complaint.priority_level) });
 });
 
 router.patch('/:id/status', async (req: AuthRequest, res) => {
