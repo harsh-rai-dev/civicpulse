@@ -1,4 +1,5 @@
-import React from 'react';
+import api from '../services/api';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, Zap, CheckCircle } from 'lucide-react';
 
@@ -8,6 +9,12 @@ interface HomeProps {
 }
 
 export default function Home({ token, role }: HomeProps) {
+  const [stats, setStats] = useState<{total:number; resolved:number; inProgress:number}>({total:0, resolved:0, inProgress:0});
+  useEffect(() => {
+    api.get('/stats')
+      .then(r => setStats(r.data))
+      .catch(() => {});
+  }, []);
   return (
     <div className="home-page">
       {/* Hero Section */}
@@ -32,15 +39,15 @@ export default function Home({ token, role }: HomeProps) {
               <div className="hero-stats-card">
                 <div className="stat-row">
                   <div className="stat-box">
-                    <div className="stat-value">128</div>
+                    <div className="stat-value">{stats.total}</div>
                     <div className="stat-label">Issues Reported</div>
                   </div>
                   <div className="stat-box">
-                    <div className="stat-value">86</div>
+                    <div className="stat-value">{stats.resolved}</div>
                     <div className="stat-label">Resolved</div>
                   </div>
                   <div className="stat-box">
-                    <div className="stat-value">42</div>
+                    <div className="stat-value">{stats.inProgress}</div>
                     <div className="stat-label">In Progress</div>
                   </div>
                 </div>

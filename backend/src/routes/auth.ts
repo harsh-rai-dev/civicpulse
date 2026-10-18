@@ -46,6 +46,15 @@ router.post('/login', async (req, res) => {
 
 
 
+if (portal === 'official' && user.role !== 'admin') {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  if (portal === 'citizen' && user.role !== 'citizen') {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  if (portal !== 'official' && portal !== 'citizen') {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
   const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
   res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, block_division: user.block_division } });
 });
